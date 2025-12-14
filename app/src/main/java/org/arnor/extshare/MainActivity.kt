@@ -106,6 +106,7 @@ class MainActivity : AppCompatActivity() {
         val external = presentationDisplays.firstOrNull { it.displayId != android.view.Display.DEFAULT_DISPLAY }
             ?: allDisplays.firstOrNull { it.displayId != android.view.Display.DEFAULT_DISPLAY }
 
+        val methodDetails = DualScreenHelper.describeDualMethods()
         val details = buildString {
             appendLine("All displays (${allDisplays.size}):")
             allDisplays.forEach { d ->
@@ -114,17 +115,17 @@ class MainActivity : AppCompatActivity() {
         }
 
         if (external == null) {
-            setTestResult("No external/cover display detected.\n$details")
+            setTestResult("No external/cover display detected.\n$details\n$methodDetails")
             return
         }
 
         try {
             val presentation = DisplayTestPresentation(this, external)
             presentation.show()
-            setTestResult("Displayed test card on display ${external.displayId} (${external.name}).\n$details")
+            setTestResult("Displayed test card on display ${external.displayId} (${external.name}).\n$details\n$methodDetails")
             Handler(Looper.getMainLooper()).postDelayed({ presentation.dismiss() }, 2000)
         } catch (t: Throwable) {
-            setTestResult("Failed to present on display ${external.displayId}: ${t.message}\n$details")
+            setTestResult("Failed to present on display ${external.displayId}: ${t.message}\n$details\n$methodDetails")
         }
     }
 

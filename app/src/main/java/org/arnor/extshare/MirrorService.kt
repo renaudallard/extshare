@@ -48,6 +48,8 @@ class MirrorService : Service(), DisplayManager.DisplayListener {
         if (!isRunning.get()) {
             isRunning.set(true)
         }
+        val dualMsg = DualScreenHelper.attemptEnableDualScreen()
+        Log.d(TAG, "Dual screen toggle attempt: $dualMsg")
         startForeground(notificationId, buildNotification())
         startProjection()
         updateTileState()
