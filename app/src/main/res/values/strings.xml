@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">extshare</string>
+    <string name="main_title">ExtShare</string>
+    <string name="main_subtitle">Mirror your main screen to the external/cover display on foldables.</string>
+    <string name="action_request">Grant screen capture</string>
+    <string name="action_start">Start mirroring</string>
+    <string name="action_stop">Stop mirroring</string>
+    <string name="status_ready">Ready to mirror</string>
+    <string name="status_running">Mirroring in progress</string>
+    <string name="status_missing_permission">Needs capture permission</string>
+    <string name="tile_label">ExtShare</string>
+    <string name="notification_channel_name">Screen mirroring</string>
+    <string name="notification_title">External display mirroring running</string>
+    <string name="notification_content">Your main screen is being mirrored to the external display.</string>
+</resources>
