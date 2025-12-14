@@ -1,7 +1,10 @@
 package org.arnor.extshare
 
+import android.hardware.display.DisplayManager
 import android.media.projection.MediaProjectionManager
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -47,6 +50,10 @@ class MainActivity : AppCompatActivity() {
             renderState()
         }
 
+        binding.testButton.setOnClickListener {
+            runExternalDisplayTest()
+        }
+
         renderState()
     }
 
@@ -83,5 +90,38 @@ class MainActivity : AppCompatActivity() {
             hasGrant -> "Tap Start or use the Quick Settings tile to mirror whenever the cover display is available."
             else -> "Tap Grant screen capture to allow mirroring to the external/cover display."
         }
+
+        if (binding.testResult.text.isNullOrEmpty()) {
+            binding.testResult.text = "${getString(R.string.test_result_prefix)} Not run yet."
+        }
+    }
+
+    private fun runExternalDisplayTest() {
+        val dm: DisplayManager? = getSystemService()
+        if (dm == null) {
+            setTestResult("DisplayManager unavailable.")
+            return
+        }
+        val external = dm.getDisplays(DisplayManager.DISPLAY_CATEGORY_PRESENTATION)
+            .firstOrNull { it.displayId != android.view.Display.DEFAULT_DISPLAY }
+            ?: dm.displays.firstOrNull { it.displayId != android.view.Display.DEFAULT_DISPLAY }
+
+        if (external == null) {
+            setTestResult("No external/cover display detected.")
+            return
+        }
+
+        try {
+            val presentation = DisplayTestPresentation(this, external)
+            presentation.show()
+            setTestResult("Displayed test card on display ${external.displayId} (${external.name}).")
+            Handler(Looper.getMainLooper()).postDelayed({ presentation.dismiss() }, 2000)
+        } catch (t: Throwable) {
+            setTestResult("Failed to present on display ${external.displayId}: ${t.message}")
+        }
+    }
+
+    private fun setTestResult(text: String) {
+        binding.testResult.text = "${getString(R.string.test_result_prefix)} $text"
     }
 }

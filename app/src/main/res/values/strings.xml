@@ -6,6 +6,7 @@
     <string name="action_request">Grant screen capture</string>
     <string name="action_start">Start mirroring</string>
     <string name="action_stop">Stop mirroring</string>
+    <string name="action_test_display">Test external display</string>
     <string name="status_ready">Ready to mirror</string>
     <string name="status_running">Mirroring in progress</string>
     <string name="status_missing_permission">Needs capture permission</string>
@@ -13,4 +14,5 @@
     <string name="notification_channel_name">Screen mirroring</string>
     <string name="notification_title">External display mirroring running</string>
     <string name="notification_content">Your main screen is being mirrored to the external display.</string>
+    <string name="test_result_prefix">External display test:</string>
 </resources>
