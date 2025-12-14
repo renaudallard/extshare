@@ -90,7 +90,6 @@ class MainActivity : AppCompatActivity() {
             hasGrant -> "Tap Start or use the Quick Settings tile to mirror whenever the cover display is available."
             else -> "Tap Grant screen capture to allow mirroring to the external/cover display."
         }
-
         if (binding.testResult.text.isNullOrEmpty()) {
             binding.testResult.text = "${getString(R.string.test_result_prefix)} Not run yet."
         }
@@ -102,26 +101,40 @@ class MainActivity : AppCompatActivity() {
             setTestResult("DisplayManager unavailable.")
             return
         }
-        val external = dm.getDisplays(DisplayManager.DISPLAY_CATEGORY_PRESENTATION)
-            .firstOrNull { it.displayId != android.view.Display.DEFAULT_DISPLAY }
-            ?: dm.displays.firstOrNull { it.displayId != android.view.Display.DEFAULT_DISPLAY }
+        val allDisplays = dm.displays.toList()
+        val presentationDisplays = dm.getDisplays(DisplayManager.DISPLAY_CATEGORY_PRESENTATION).toList()
+        val external = presentationDisplays.firstOrNull { it.displayId != android.view.Display.DEFAULT_DISPLAY }
+            ?: allDisplays.firstOrNull { it.displayId != android.view.Display.DEFAULT_DISPLAY }
+
+        val details = buildString {
+            appendLine("All displays (${allDisplays.size}):")
+            allDisplays.forEach { d ->
+                appendLine(" - id=${d.displayId}, name=${d.name}, flags=${d.flags}, state=${safeState(d)}, category=${if (presentationDisplays.contains(d)) "presentation" else "default"}")
+            }
+        }
 
         if (external == null) {
-            setTestResult("No external/cover display detected.")
+            setTestResult("No external/cover display detected.\n$details")
             return
         }
 
         try {
             val presentation = DisplayTestPresentation(this, external)
             presentation.show()
-            setTestResult("Displayed test card on display ${external.displayId} (${external.name}).")
+            setTestResult("Displayed test card on display ${external.displayId} (${external.name}).\n$details")
             Handler(Looper.getMainLooper()).postDelayed({ presentation.dismiss() }, 2000)
         } catch (t: Throwable) {
-            setTestResult("Failed to present on display ${external.displayId}: ${t.message}")
+            setTestResult("Failed to present on display ${external.displayId}: ${t.message}\n$details")
         }
     }
 
     private fun setTestResult(text: String) {
         binding.testResult.text = "${getString(R.string.test_result_prefix)} $text"
+    }
+
+    private fun safeState(display: android.view.Display): Int = try {
+        display.state
+    } catch (_: Exception) {
+        -1
     }
 }
