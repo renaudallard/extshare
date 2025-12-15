@@ -40,6 +40,20 @@ class MirrorPresentation(
         })
     }
 
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        // Try to wake the cover/secondary panel by forcing the window on and bright.
+        val w = window ?: return
+        w.addFlags(
+            android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON or
+                android.view.WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
+        )
+        val lp = w.attributes
+        lp.screenBrightness = 1f
+        w.attributes = lp
+        Log.d(TAG, "Window flags applied to wake external display ${display.displayId}")
+    }
+
     companion object {
         private const val TAG = "MirrorPresentation"
     }
