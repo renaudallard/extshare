@@ -12,6 +12,8 @@ import android.hardware.display.VirtualDisplay
 import android.media.projection.MediaProjection
 import android.media.projection.MediaProjectionManager
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.os.IBinder
 import android.service.quicksettings.TileService
 import android.util.DisplayMetrics
@@ -28,10 +30,16 @@ class MirrorService : Service(), DisplayManager.DisplayListener {
     private val notificationId = 42
 
     private lateinit var displayManager: DisplayManager
+    private val retryHandler = Handler(Looper.getMainLooper())
     private var mediaProjection: MediaProjection? = null
     private var virtualDisplay: VirtualDisplay? = null
     private var presentation: MirrorPresentation? = null
     private var targetDisplayId: Int? = null
+    private val retryRunnable = Runnable {
+        if (isRunning.get()) {
+            startPresentation()
+        }
+    }
 
     override fun onCreate() {
         super.onCreate()
@@ -61,6 +69,7 @@ class MirrorService : Service(), DisplayManager.DisplayListener {
         displayManager.unregisterDisplayListener(this)
         releaseAll()
         isRunning.set(false)
+        retryHandler.removeCallbacksAndMessages(null)
         stopForeground(STOP_FOREGROUND_REMOVE)
         updateTileState()
     }
@@ -85,10 +94,12 @@ class MirrorService : Service(), DisplayManager.DisplayListener {
     }
 
     private fun startPresentation() {
+        retryHandler.removeCallbacksAndMessages(null)
         val display = chooseExternalDisplay()
         if (display == null) {
             Log.w(TAG, "No external display found; waiting for one to appear.")
             targetDisplayId = null
+            scheduleRetry()
             return
         }
         targetDisplayId = display.displayId
@@ -173,6 +184,10 @@ class MirrorService : Service(), DisplayManager.DisplayListener {
         }
         Log.w(TAG, "No external/non-default display found.")
         return null
+    }
+
+    private fun scheduleRetry() {
+        retryHandler.postDelayed(retryRunnable, 1500L)
     }
 
     private fun displayMetricsFor(display: Display?): DisplayMetrics? {

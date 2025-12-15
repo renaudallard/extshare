@@ -27,7 +27,8 @@ object DisplayProbe {
         val report = buildString {
             appendLine("All displays (${displays.size}):")
             displays.forEach { d ->
-                appendLine(" - id=${d.displayId}, name=${d.name}, flags=${d.flags}, state=${safeState(d)}, category=${if (presentation.contains(d)) "presentation" else "default"}")
+                val state = stateName(safeState(d))
+                appendLine(" - id=${d.displayId}, name=${d.name}, flags=${d.flags}, state=$state, category=${if (presentation.contains(d)) "presentation" else "default"}")
             }
             appendLine("Presentation displays (${presentation.size}): ${presentation.joinToString { it.displayId.toString() }}")
             appendLine("DisplayManagerGlobal#getDisplayIds(): ${globalIds?.contentToString() ?: "n/a"}")
@@ -40,6 +41,13 @@ object DisplayProbe {
     fun pickExternalDisplay(context: Context): Display? {
         val dm = context.getSystemService(DisplayManager::class.java) ?: return null
         val probe = collect(context)
+
+        // On RAZR cover the external display is consistently id=1; try that first.
+        listOf(1, 2, 3).forEach { id ->
+            if (id != Display.DEFAULT_DISPLAY) {
+                dm.getDisplay(id)?.let { return it }
+            }
+        }
 
         // Prefer presentation category first
         val presentation = probe.presentationList.firstOrNull { it.displayId != Display.DEFAULT_DISPLAY }
@@ -88,5 +96,14 @@ object DisplayProbe {
         display.state
     } catch (_: Exception) {
         -1
+    }
+
+    private fun stateName(state: Int): String = when (state) {
+        Display.STATE_OFF -> "OFF"
+        Display.STATE_ON -> "ON"
+        Display.STATE_DOZE -> "DOZE"
+        Display.STATE_DOZE_SUSPEND -> "DOZE_SUSPEND"
+        Display.STATE_ON_SUSPEND -> "ON_SUSPEND"
+        else -> state.toString()
     }
 }
