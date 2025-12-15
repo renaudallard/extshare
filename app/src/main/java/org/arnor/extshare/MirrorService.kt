@@ -164,34 +164,15 @@ class MirrorService : Service(), DisplayManager.DisplayListener {
     }
 
     private fun chooseExternalDisplay(): Display? {
-        val allDisplays = displayManager.displays
-        Log.d(
-            TAG,
-            "Available displays: ${
-                allDisplays.joinToString { d ->
-                    val state = try {
-                        d.state
-                    } catch (_: Exception) {
-                        -1
-                    }
-                    "${d.displayId}:${d.name}:flags=${d.flags}:state=$state"
-                }
-            }"
-        )
-
-        val presentationDisplays = displayManager.getDisplays(DisplayManager.DISPLAY_CATEGORY_PRESENTATION)
-        val external = presentationDisplays.firstOrNull { it.displayId != Display.DEFAULT_DISPLAY }
+        val probe = DisplayProbe.collect(this)
+        Log.d(TAG, "Display probe:\n${probe.report}")
+        val external = DisplayProbe.pickExternalDisplay(this)
         if (external != null) {
-            Log.d(TAG, "Using presentation display ${external.displayId} ${external.name}")
+            Log.d(TAG, "Using external display ${external.displayId} ${external.name}")
             return external
         }
-        val fallback = allDisplays.firstOrNull { it.displayId != Display.DEFAULT_DISPLAY }
-        if (fallback != null) {
-            Log.d(TAG, "Using fallback non-default display ${fallback.displayId} ${fallback.name}")
-        } else {
-            Log.w(TAG, "No external/non-default display found.")
-        }
-        return fallback
+        Log.w(TAG, "No external/non-default display found.")
+        return null
     }
 
     private fun displayMetricsFor(display: Display?): DisplayMetrics? {

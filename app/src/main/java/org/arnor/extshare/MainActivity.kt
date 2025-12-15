@@ -101,18 +101,12 @@ class MainActivity : AppCompatActivity() {
             setTestResult("DisplayManager unavailable.")
             return
         }
-        val allDisplays = dm.displays.toList()
-        val presentationDisplays = dm.getDisplays(DisplayManager.DISPLAY_CATEGORY_PRESENTATION).toList()
-        val external = presentationDisplays.firstOrNull { it.displayId != android.view.Display.DEFAULT_DISPLAY }
-            ?: allDisplays.firstOrNull { it.displayId != android.view.Display.DEFAULT_DISPLAY }
+        val probe = DisplayProbe.collect(this)
+
+        val external = DisplayProbe.pickExternalDisplay(this)
 
         val methodDetails = DualScreenHelper.describeDualMethods()
-        val details = buildString {
-            appendLine("All displays (${allDisplays.size}):")
-            allDisplays.forEach { d ->
-                appendLine(" - id=${d.displayId}, name=${d.name}, flags=${d.flags}, state=${safeState(d)}, category=${if (presentationDisplays.contains(d)) "presentation" else "default"}")
-            }
-        }
+        val details = probe.report
 
         if (external == null) {
             setTestResult("No external/cover display detected.\n$details\n$methodDetails")
