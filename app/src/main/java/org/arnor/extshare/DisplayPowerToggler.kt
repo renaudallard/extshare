@@ -1,43 +1,51 @@
 package org.arnor.extshare
 
 import android.util.Log
+import android.view.Display
 
 object DisplayPowerToggler {
     private const val TAG = "DisplayPowerToggler"
 
     /**
-     * Tries hidden SurfaceControl and DisplayManagerGlobal hooks to nudge a display into ON state.
+     * Tries hidden SurfaceControl / DisplayManagerGlobal hooks to nudge a display into ON state.
      */
-    fun forceOn(displayId: Int): String {
+    fun forceOn(display: Display): String {
         val attempts = mutableListOf<String>()
-        attempts += surfaceControlToggle(displayId)
-        attempts += displayManagerToggle(displayId)
+        attempts += surfaceControlToggle(display)
+        attempts += displayManagerToggle(display.displayId)
         val output = attempts.filter { it.isNotBlank() }
         return if (output.isEmpty()) "no candidate methods" else output.joinToString("; ")
     }
 
-    private fun surfaceControlToggle(displayId: Int): String {
+    private fun surfaceControlToggle(display: Display): String {
+        val uniqueId = runCatching { display::class.java.getMethod("getUniqueId").invoke(display) as? String }.getOrNull()
+        val physicalId = uniqueId?.substringAfter(':', "")?.toLongOrNull()
         return try {
             val sc = Class.forName("android.view.SurfaceControl")
             val getToken = sc.methods.firstOrNull { m ->
-                m.name.lowercase().contains("displaytoken") && m.parameterTypes.size == 1
+                val name = m.name.lowercase()
+                name.contains("physical") && name.contains("displaytoken") && m.parameterTypes.size == 1
             }
             val token = when (getToken?.parameterTypes?.firstOrNull()) {
                 Long::class.javaPrimitiveType, java.lang.Long::class.java ->
-                    getToken?.invoke(null, displayId.toLong())
+                    physicalId?.let { getToken?.invoke(null, it) }
                 Int::class.javaPrimitiveType, java.lang.Integer::class.java ->
-                    getToken?.invoke(null, displayId)
+                    physicalId?.toInt()?.let { getToken?.invoke(null, it) }
                 else -> null
             }
-            if (token == null || getToken == null) return "SurfaceControl: no token method"
+            val resolvedToken = token
+            val resolvedGetter = getToken
+            if (resolvedToken == null || resolvedGetter == null) {
+                return "SurfaceControl: no physical token (uniqueId=$uniqueId, physicalId=$physicalId)"
+            }
 
             val setMode = sc.getMethod(
                 "setDisplayPowerMode",
                 Class.forName("android.os.IBinder"),
                 Int::class.javaPrimitiveType
             )
-            val result = setMode.invoke(null, token, 2 /*ON*/)
-            "SurfaceControl.setDisplayPowerMode -> $result via ${getToken.name}"
+            val result = setMode.invoke(null, resolvedToken, 2 /*ON*/)
+            "SurfaceControl.setDisplayPowerMode -> $result via ${resolvedGetter.name} using physicalId=$physicalId"
         } catch (t: Throwable) {
             "SurfaceControl toggle failed: ${t.javaClass.simpleName}: ${t.message}"
         }
@@ -47,12 +55,15 @@ object DisplayPowerToggler {
         return try {
             val clazz = Class.forName("android.hardware.display.DisplayManagerGlobal")
             val instance = clazz.getMethod("getInstance").invoke(null)
-            val methods = clazz.methods.filter { m ->
+            val methods = clazz.methods
+            val methodList = methods.joinToString { "${it.name}(${it.parameterTypes.joinToString { p -> p.simpleName }})" }
+            Log.d(TAG, "DMG methods: $methodList")
+            val candidates = methods.filter { m ->
                 val name = m.name.lowercase()
                 name.contains("display") && (name.contains("state") || name.contains("enable") || name.contains("power"))
             }
             val attempts = mutableListOf<String>()
-            for (m in methods) {
+            for (m in candidates) {
                 val params = m.parameterTypes
                 val args = buildArgs(displayId, params) ?: continue
                 try {

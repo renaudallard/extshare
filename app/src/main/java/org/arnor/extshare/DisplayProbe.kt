@@ -28,7 +28,8 @@ object DisplayProbe {
             appendLine("All displays (${displays.size}):")
             displays.forEach { d ->
                 val state = stateName(safeState(d))
-                appendLine(" - id=${d.displayId}, name=${d.name}, flags=${d.flags}, state=$state, category=${if (presentation.contains(d)) "presentation" else "default"}")
+                val unique = runCatching { d::class.java.getMethod("getUniqueId").invoke(d) as? String }.getOrNull()
+                appendLine(" - id=${d.displayId}, name=${d.name}, flags=${d.flags}, state=$state, uniqueId=$unique, category=${if (presentation.contains(d)) "presentation" else "default"}")
             }
             appendLine("Presentation displays (${presentation.size}): ${presentation.joinToString { it.displayId.toString() }}")
             appendLine("DisplayManagerGlobal#getDisplayIds(): ${globalIds?.contentToString() ?: "n/a"}")
