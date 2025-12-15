@@ -103,6 +103,10 @@ class MirrorService : Service(), DisplayManager.DisplayListener {
             return
         }
         targetDisplayId = display.displayId
+        if (display.state == Display.STATE_OFF) {
+            Log.d(TAG, "Target display ${display.displayId} is OFF; launching waker activity.")
+            WakerActivity.launch(this, display.displayId)
+        }
         presentation?.dismiss()
         presentation = MirrorPresentation(
             context = this,

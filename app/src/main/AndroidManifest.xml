@@ -32,6 +32,13 @@
             android:excludeFromRecents="true"
             android:theme="@style/Theme.MirrorTile.Transparent" />
 
+        <activity
+            android:name=".WakerActivity"
+            android:exported="false"
+            android:theme="@style/Theme.MirrorTile.Transparent"
+            android:excludeFromRecents="true"
+            android:taskAffinity="" />
+
         <service
             android:name=".MirrorService"
             android:enabled="true"
