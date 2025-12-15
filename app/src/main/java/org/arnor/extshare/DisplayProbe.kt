@@ -23,13 +23,15 @@ object DisplayProbe {
         val manualIds = listOf(1, 2, 3).mapNotNull { id ->
             dm?.getDisplay(id)?.let { id to it }
         }
+        val infoById = readDisplayInfos(globalIds ?: IntArray(0))
 
         val report = buildString {
             appendLine("All displays (${displays.size}):")
             displays.forEach { d ->
                 val state = stateName(safeState(d))
-                val unique = runCatching { d::class.java.getMethod("getUniqueId").invoke(d) as? String }.getOrNull()
-                appendLine(" - id=${d.displayId}, name=${d.name}, flags=${d.flags}, state=$state, uniqueId=$unique, category=${if (presentation.contains(d)) "presentation" else "default"}")
+                val unique = infoById[d.displayId]?.first
+                val infoState = infoById[d.displayId]?.second
+                appendLine(" - id=${d.displayId}, name=${d.name}, flags=${d.flags}, state=$state/$infoState, uniqueId=$unique, category=${if (presentation.contains(d)) "presentation" else "default"}")
             }
             appendLine("Presentation displays (${presentation.size}): ${presentation.joinToString { it.displayId.toString() }}")
             appendLine("DisplayManagerGlobal#getDisplayIds(): ${globalIds?.contentToString() ?: "n/a"}")
@@ -91,6 +93,23 @@ object DisplayProbe {
         } catch (t: Throwable) {
             null
         }
+    }
+
+    private fun readDisplayInfos(ids: IntArray): Map<Int, Pair<String?, Int?>> {
+        val result = mutableMapOf<Int, Pair<String?, Int?>>()
+        try {
+            val clazz = Class.forName("android.hardware.display.DisplayManagerGlobal")
+            val instance = clazz.getMethod("getInstance").invoke(null)
+            val getInfo = clazz.getMethod("getDisplayInfo", Int::class.javaPrimitiveType)
+            ids.forEach { id ->
+                val info = runCatching { getInfo.invoke(instance, id) }.getOrNull()
+                val unique = info?.javaClass?.fields?.firstOrNull { it.name == "uniqueId" }?.get(info) as? String
+                val state = info?.javaClass?.fields?.firstOrNull { it.name == "state" }?.get(info) as? Int
+                result[id] = unique to state
+            }
+        } catch (_: Throwable) {
+        }
+        return result
     }
 
     private fun safeState(display: Display): Int = try {

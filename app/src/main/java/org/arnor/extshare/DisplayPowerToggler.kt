@@ -22,9 +22,14 @@ object DisplayPowerToggler {
         val physicalId = uniqueId?.substringAfter(':', "")?.toLongOrNull()
         return try {
             val sc = Class.forName("android.view.SurfaceControl")
+            val methods = sc.methods.joinToString { "${it.name}(${it.parameterTypes.joinToString { p -> p.simpleName }})" }
+            Log.d(TAG, "SurfaceControl methods: $methods")
             val getToken = sc.methods.firstOrNull { m ->
                 val name = m.name.lowercase()
-                name.contains("physical") && name.contains("displaytoken") && m.parameterTypes.size == 1
+                name.contains("getphysicaldisplaytoken") && m.parameterTypes.size == 1
+            } ?: sc.methods.firstOrNull { m ->
+                val name = m.name.lowercase()
+                name.contains("getdisplaytoken") && m.parameterTypes.size == 1
             }
             val token = when (getToken?.parameterTypes?.firstOrNull()) {
                 Long::class.javaPrimitiveType, java.lang.Long::class.java ->
