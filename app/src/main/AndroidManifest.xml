@@ -37,7 +37,9 @@
             android:exported="false"
             android:theme="@style/Theme.MirrorTile.Transparent"
             android:excludeFromRecents="true"
-            android:taskAffinity="" />
+            android:taskAffinity=""
+            android:showWhenLocked="true"
+            android:turnScreenOn="true" />
 
         <service
             android:name=".MirrorService"

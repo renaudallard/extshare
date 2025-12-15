@@ -7,21 +7,25 @@ import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.view.WindowManager
 import android.util.Log
+import android.view.View
+import android.view.WindowManager
 
 class WakerActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Make this window as unobtrusive as possible.
+        // Make this window as unobtrusive as possible but bright enough to wake the panel.
+        setShowWhenLocked(true)
+        setTurnScreenOn(true)
         window.addFlags(
             WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON or
                 WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON or
                 WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED
         )
         window.attributes = window.attributes.apply { screenBrightness = 1f }
+        setContentView(View(this).apply { setBackgroundColor(0xFFFFFFFF.toInt()) })
         Log.d(TAG, "WakerActivity on display ${display?.displayId}")
 
         Handler(Looper.getMainLooper()).postDelayed({

@@ -106,6 +106,8 @@ class MirrorService : Service(), DisplayManager.DisplayListener {
         if (display.state == Display.STATE_OFF) {
             Log.d(TAG, "Target display ${display.displayId} is OFF; launching waker activity.")
             WakerActivity.launch(this, display.displayId)
+            val toggleMsg = DisplayPowerToggler.forceOn(display.displayId)
+            Log.d(TAG, "Display power toggle attempts: $toggleMsg")
         }
         presentation?.dismiss()
         presentation = MirrorPresentation(
